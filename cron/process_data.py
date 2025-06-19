@@ -180,7 +180,7 @@ def process_data_for_repo(repo_name, checkpoint_date):
         """
         SELECT pr_link, test_case_file_path, test_case_name, actual_result
         FROM pr_to_test_runs_mapping
-        WHERE pr_link IN %s
+        WHERE pr_link IN %s and actual_result IN ('passed', 'failed')
         """,
         (pull_request_links,),
     )
