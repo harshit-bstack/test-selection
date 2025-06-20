@@ -114,7 +114,7 @@ def process_file_change(file_change_path, pr_creation_date, file_change_dates):
     return data
 
 
-def process_data_for_repo(repo_name, checkpoint_date):
+def process_data_for_repo(repo_name):
     """
     Fetches data from the database, processes it to create features,
     and saves the resulting dataset to a CSV file.
@@ -122,19 +122,8 @@ def process_data_for_repo(repo_name, checkpoint_date):
     db_connection = get_db_connection()
     db_cursor = db_connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
-    # Fetch pull request details from the database
-    if checkpoint_date:
-        start_date = checkpoint_date - timedelta(days=28)
-        db_cursor.execute(
-            """
-            SELECT pr_link, repo_name, date_of_pr, list_of_authors
-            FROM repo_pr_details
-            WHERE repo_name = %s AND date_of_pr >= %s
-            """,
-            (repo_name, start_date),
-        )
-    else:
-        db_cursor.execute(
+    
+    db_cursor.execute(
             """
             SELECT pr_link, date_of_pr, list_of_authors
             FROM repo_pr_details
@@ -330,19 +319,10 @@ def main():
 
     for repo in repositories:
         repo_name = repo["repo_name"]
-
-        # Get the latest checkpoint date for incremental processing
-        db_cursor.execute(
-            "SELECT MAX(date_of_checkpoint) as max_checkpoint FROM checkpoint_details WHERE repo_name = %s",
-            (repo_name,),
-        )
-        result = db_cursor.fetchone()
-        latest_checkpoint = (
-            result["max_checkpoint"] if result and result["max_checkpoint"] else None
-        )
-
+        
+        print(f"Processing data for repository: {repo_name}")
         # Process data and train the model for the repository
-        processed_data_path = process_data_for_repo(repo_name, latest_checkpoint)
+        processed_data_path = process_data_for_repo(repo_name)
         if processed_data_path:
             train_model(repo_name, processed_data_path)
 
